@@ -26,6 +26,10 @@ broker host has no default on purpose; the user types it in the setup form.
 - `config_flow.py`: setup form (logs in before saving) and options form.
 - `sensor.py`, `binary_sensor.py`, `button.py`, `entity.py`: entities.
 - `tests/broker/`: Node broker (aedes + ws) with a fake module behind it.
+- `wiki/`: source of the GitHub wiki. The "Publish wiki" workflow copies it to
+  the wiki on every push to `main`; edit the pages here, not in the web UI.
+- `translations/`: `en.json` is the source; `tests/test_translations.py` checks
+  that every other language covers the same keys.
 
 ## Tests
 

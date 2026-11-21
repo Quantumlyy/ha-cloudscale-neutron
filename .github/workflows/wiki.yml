@@ -1,0 +1,42 @@
+name: Publish wiki
+
+# The wiki pages live in the wiki/ folder of this repository. This job copies
+# them to the GitHub wiki whenever they change.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "wiki/**"
+      - ".github/workflows/wiki.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy wiki/ to the GitHub wiki
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          remote="https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git"
+          if ! git clone --quiet "$remote" wiki-remote; then
+            # GitHub only creates the wiki's git repository with its first page.
+            echo "::warning::Could not clone the wiki, so nothing was published. If it has no pages yet, open the Wiki tab, create the first page with any text, then re-run this job."
+            exit 0
+          fi
+          rsync -a --delete --exclude .git wiki/ wiki-remote/
+          cd wiki-remote
+          git config user.name "Nejc Drobnič"
+          git config user.email "nejc@nejc.dev"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "The wiki is already up to date."
+            exit 0
+          fi
+          git commit --quiet -m "Update wiki from ${GITHUB_SHA::7}"
+          git push --quiet origin HEAD
