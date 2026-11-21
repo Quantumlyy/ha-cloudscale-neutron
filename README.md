@@ -52,10 +52,15 @@ reported straight away.
 |---|---|
 | Net weight, Gross weight, Tare | Live values, shown with the decimals the scale prints |
 | Stable | On while the scale reports a stable weight |
+| At zero, Tare active | On when the gross weight is zero, and when a tare is applied |
+| Overload, Underload | On when the scale reports the load as over or under its range |
+| Load | Gross weight as a percentage of the scale's capacity |
+| Capacity, Division | The scale's maximum load and step size, read from its settings |
 | Tare, Zero, Clear tare | Buttons that send `T`, `Z` and `TAC` to the scale |
 | Net weight smoothed, Gross weight smoothed | Only when smoothing is on |
 | High-resolution weight, ADC counts, Load cell signal | Disabled by default |
 | ADC counts smoothed, Load cell signal smoothed | Only when smoothing is on; disabled by default |
+| Reply time, Last reading | How long the scale took to answer and when it last did; disabled by default |
 
 Entities turn unavailable when the broker connection drops or the module
 stops answering (after three missed polls, 15 seconds minimum).
@@ -94,7 +99,24 @@ on `$CSL/<module id>/TX/SC` with one comma-separated line:
 Fields after the three IDs: status (`S` stable, `D` moving), gross, net, tare,
 high-resolution weight, ADC counts, millivolts, unit.
 
+Once per connection it also publishes `RSD`, which reads the scale's settings.
+The reply is `RSD;KEY=VALUE;...`, for example `1U=kg` (unit), `1M1=30`
+(capacity) and `1D1=0.005` (division).
+
 The broker login is `CSL-<module id>` with the module PIN as the password.
+
+### What it sends
+
+Left alone, the integration only ever sends those two read commands, `QASI1C`
+and `RSD`. Both are what the Scale Monitor web app itself sends when a scale is
+open. The three buttons send `T`, `Z` or `TAC`, and only when pressed. It never
+writes settings to the module.
+
+### Diagnostics
+
+**Download diagnostics** on the device page gives the latest reading and every
+field of the scale's settings reply. The module ID, PIN and broker host are
+left out.
 
 ## Tests
 

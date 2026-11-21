@@ -33,7 +33,12 @@ SMOOTHED_KEYS = ("net", "gross", "adc", "millivolts")
 # one comma-separated line on the TX topic.
 POLL_COMMAND = "QASI1C"
 
-# Scale commands from the CloudScale Communication Protocol (CSCP) manual.
+# Read-only command the Scale Monitor web app sends when it opens a scale. The
+# module answers with its scale settings (unit, capacity, division, ...).
+SETTINGS_COMMAND = "RSD"
+
+# Scale commands from the CloudScale Communication Protocol (CSCP) manual. These
+# are only sent when the user presses the matching button.
 COMMAND_TARE = "T"
 COMMAND_ZERO = "Z"
 COMMAND_CLEAR_TARE = "TAC"

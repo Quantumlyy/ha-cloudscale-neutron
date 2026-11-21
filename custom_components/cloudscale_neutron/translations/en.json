@@ -76,11 +76,38 @@
       },
       "millivolts_smoothed": {
         "name": "Load cell signal smoothed"
+      },
+      "load": {
+        "name": "Load"
+      },
+      "capacity": {
+        "name": "Capacity"
+      },
+      "division": {
+        "name": "Division"
+      },
+      "reply_time": {
+        "name": "Reply time"
+      },
+      "last_reading": {
+        "name": "Last reading"
       }
     },
     "binary_sensor": {
       "stable": {
         "name": "Stable"
+      },
+      "at_zero": {
+        "name": "At zero"
+      },
+      "tare_active": {
+        "name": "Tare active"
+      },
+      "overload": {
+        "name": "Overload"
+      },
+      "underload": {
+        "name": "Underload"
       }
     },
     "button": {

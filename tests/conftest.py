@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import socket
 import subprocess
+import urllib.parse
 import urllib.request
 
 import pytest
@@ -31,7 +32,7 @@ def broker(socket_enabled):
     assert proc.stdout.readline().strip() == b"ready"
 
     def control(**params):
-        query = "&".join(f"{k}={v}" for k, v in params.items())
+        query = urllib.parse.urlencode(params)
         with urllib.request.urlopen(f"http://127.0.0.1:{port}/set?{query}") as resp:
             return json.load(resp)
 

@@ -22,7 +22,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 REPLY_PREFIX = "QASI1C"
+SETTINGS_PREFIX = "RSD"
 STATUS_STABLE = "S"
+STATUS_OVERLOAD = "+"
+STATUS_UNDERLOAD = "-"
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,4 +84,44 @@ def parse_reading(payload: str) -> Reading | None:
         millivolts=_to_float(parts[10]),
         unit=parts[11] or None,
         decimals=_decimals(parts[6]),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class ScaleSettings:
+    """Scale settings from the reply to the RSD command.
+
+    The reply is ``RSD;KEY=VALUE;KEY=VALUE;...``. Keys that start with ``1``
+    belong to scale 1, for example ``1U`` (unit), ``1M1`` to ``1M3`` (capacity
+    of weighing ranges 1 to 3) and ``1D1`` to ``1D3`` (division of each range).
+    Empty values mean "not set".
+    """
+
+    unit: str | None
+    capacity: float | None
+    division: float | None
+    raw: dict[str, str]
+
+
+def parse_settings(payload: str) -> ScaleSettings | None:
+    """Parse an RSD reply. Return None for anything else."""
+    parts = payload.strip().split(";")
+    if parts[0] != SETTINGS_PREFIX or len(parts) < 2:
+        return None
+    raw: dict[str, str] = {}
+    for part in parts[1:]:
+        key, separator, value = part.partition("=")
+        if separator:
+            raw[key.strip()] = value.strip()
+    if not raw:
+        return None
+    capacities = [v for k in ("1M1", "1M2", "1M3") if (v := _to_float(raw.get(k, ""))) is not None]
+    divisions = [v for k in ("1D1", "1D2", "1D3") if (v := _to_float(raw.get(k, ""))) is not None]
+    return ScaleSettings(
+        unit=raw.get("1U") or None,
+        # A multi-range scale weighs up to its largest range and is finest in
+        # its smallest one.
+        capacity=max(capacities) if capacities else None,
+        division=min(divisions) if divisions else None,
+        raw=raw,
     )

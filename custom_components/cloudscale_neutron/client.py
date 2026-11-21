@@ -21,8 +21,10 @@ import paho.mqtt.client as mqtt
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers.event import async_track_time_interval
 
-from .const import POLL_COMMAND, SMOOTHED_KEYS
-from .parser import Reading, parse_reading
+from homeassistant.util import dt as dt_util
+
+from .const import POLL_COMMAND, SETTINGS_COMMAND, SMOOTHED_KEYS
+from .parser import Reading, ScaleSettings, parse_reading, parse_settings
 from .smoothing import SMOOTHING_NONE, Smoother
 
 _LOGGER = logging.getLogger(__name__)
@@ -115,6 +117,11 @@ class NeutronClient:
         self.hass = hass
         self.module_id = module_id
         self.reading: Reading | None = None
+        self.settings: ScaleSettings | None = None
+        # When the scale last answered, and how long that answer took.
+        self.last_reading_at: datetime | None = None
+        self.reply_time: float | None = None
+        self._poll_sent_at: float | None = None
         self.smoothing = smoothing
         self._stable_only = stable_only
         self._smoothers: dict[str, Smoother] = (
@@ -215,8 +222,18 @@ class NeutronClient:
         return True
 
     @callback
+    def _async_poll(self) -> None:
+        if not self.async_send(POLL_COMMAND, qos=0):
+            return
+        # Time the reply from the oldest unanswered poll, but give up on one
+        # that has gone stale so a dropout does not show as one huge reply time.
+        now = time.monotonic()
+        if self._poll_sent_at is None or now - self._poll_sent_at > self._stale_after:
+            self._poll_sent_at = now
+
+    @callback
     def _async_tick(self, now: datetime | None = None) -> None:
-        self.async_send(POLL_COMMAND, qos=0)
+        self._async_poll()
         if self.available != self._was_available:
             self._async_notify()
 
@@ -253,18 +270,32 @@ class NeutronClient:
             "Module %s %s", self.module_id, "connected" if connected else "disconnected"
         )
         if connected:
-            self.async_send(POLL_COMMAND, qos=0)
+            self._async_poll()
+            # Read the scale settings once per connection, as the Scale
+            # Monitor web app does. This is a read; it changes nothing.
+            self.async_send(SETTINGS_COMMAND, qos=0)
+        else:
+            self._poll_sent_at = None
         self._async_notify()
 
     @callback
     def _async_handle_payload(self, payload: str) -> None:
         reading = parse_reading(payload)
         if reading is None:
-            return  # reply to some other command (tare, zero, another client)
+            settings = parse_settings(payload)
+            if settings is not None and settings != self.settings:
+                self.settings = settings
+                self._async_notify()
+            return  # otherwise a reply to some other command (tare, zero, ...)
         changed = reading != self.reading
         self.reading = reading
         now = time.monotonic()
         self._last_reply = now
+        self.last_reading_at = dt_util.utcnow()
+        if self._poll_sent_at is not None:
+            self.reply_time = now - self._poll_sent_at
+            self._poll_sent_at = None
+            changed = True
         if self._smoothers and (reading.stable or not self._stable_only):
             for key, smoother in self._smoothers.items():
                 if (value := getattr(reading, key)) is not None:

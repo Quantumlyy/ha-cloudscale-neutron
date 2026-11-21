@@ -43,9 +43,15 @@ stops answering.
 The scale refuses these commands while the weight is moving. Wait until
 **Stable** is on and press again.
 
+## Capacity, Division and Load stay unknown
+
+These come from the scale's settings, which are read once each time the
+integration connects. Reload the integration to read them again.
+
 ## Reporting a problem
 
 Open an issue at
 https://github.com/Quantumlyy/ha-cloudscale-neutron/issues and include the
-Home Assistant version and the relevant log lines. Do not post your module ID,
-PIN or broker host.
+Home Assistant version and the relevant log lines. **Download diagnostics** on
+the device page gives a file that already leaves out your module ID, PIN and
+broker host. Do not post those three anywhere.

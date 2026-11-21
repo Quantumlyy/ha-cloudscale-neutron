@@ -242,3 +242,81 @@ async def test_smoothing(hass: HomeAssistant, broker) -> None:
 
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
+
+
+async def test_settings_flags_and_commands_sent(hass: HomeAssistant, broker) -> None:
+    """Capacity and flags show up, and nothing but the two reads is sent."""
+    from homeassistant.components.diagnostics import REDACTED
+    from homeassistant.helpers import entity_registry as er
+
+    from custom_components.cloudscale_neutron.diagnostics import (
+        async_get_config_entry_diagnostics,
+    )
+
+    port, control = broker
+    await hass.async_add_executor_job(lambda: control(gross=7.5))
+    entry = MockConfigEntry(domain=DOMAIN, data=_data(port, interval=0.5), unique_id=MID)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+
+    prefix = "sensor.neutron_test01_"
+    await _wait_for(hass, lambda: _state(hass, prefix + "capacity") == "30.0")
+    assert _state(hass, prefix + "division") == "0.005"
+    await _wait_for(hass, lambda: _state(hass, prefix + "load") == "25.0")  # 7.5 of 30 kg
+    assert hass.states.get(prefix + "capacity").attributes["unit_of_measurement"] == "kg"
+
+    flag = lambda name: _state(hass, f"binary_sensor.neutron_test01_{name}")
+    assert (flag("at_zero"), flag("tare_active"), flag("overload"), flag("underload")) == (
+        "off", "off", "off", "off",
+    )
+
+    # the timing sensors exist but are switched off by default
+    registry = er.async_get(hass)
+    assert registry.async_get(prefix + "reply_time").disabled
+    assert registry.async_get(prefix + "last_reading").disabled
+    client = entry.runtime_data
+    await _wait_for(hass, lambda: client.reply_time is not None)
+    assert 0 <= client.reply_time < 2
+    assert client.last_reading_at is not None
+
+    # switched on, they report a duration in ms and a timestamp
+    for name in ("reply_time", "last_reading"):
+        registry.async_update_entity(prefix + name, disabled_by=None)
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    client = entry.runtime_data
+    await _wait_for(hass, lambda: (_state(hass, prefix + "reply_time") or "x").replace(".", "").isdigit())
+    assert hass.states.get(prefix + "reply_time").attributes["unit_of_measurement"] == "ms"
+    from datetime import datetime
+
+    assert datetime.fromisoformat(_state(hass, prefix + "last_reading")).tzinfo is not None
+
+    # over range, under range, empty
+    await hass.async_add_executor_job(lambda: control(status="+"))
+    await _wait_for(hass, lambda: flag("overload") == "on")
+    assert flag("underload") == "off" and flag("stable") == "off"
+    await hass.async_add_executor_job(lambda: control(status="-"))
+    await _wait_for(hass, lambda: flag("underload") == "on")
+    await hass.async_add_executor_job(lambda: control(status="S", gross=0))
+    await _wait_for(hass, lambda: flag("at_zero") == "on")
+    assert flag("overload") == "off" and flag("underload") == "off"
+
+    # diagnostics hide the account values and include the raw scale settings
+    diagnostics = await async_get_config_entry_diagnostics(hass, entry)
+    assert diagnostics["config"]["module_id"] == REDACTED
+    assert diagnostics["config"]["pin"] == REDACTED
+    assert diagnostics["config"]["host"] == REDACTED
+    assert diagnostics["scale_settings"]["1M1"] == "30"
+    assert MID not in str(diagnostics) and PIN not in str(diagnostics)
+
+    # left alone, the integration only ever sends the two read commands
+    sent = (await hass.async_add_executor_job(control))["commands"]
+    assert set(sent) == {"QASI1C", "RSD"}
+
+    # a button press sends exactly its own command on top
+    await hass.services.async_call("button", "press", {"entity_id": "button.neutron_test01_tare"}, blocking=True)
+    await _wait_for(hass, lambda: flag("tare_active") is not None)
+    sent = (await hass.async_add_executor_job(control))["commands"]
+    assert set(sent) == {"QASI1C", "RSD", "T"}
+
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()

@@ -52,13 +52,18 @@ see:
 
 - **Net weight**, **Gross weight** and **Tare**
 - **Stable**, which is on while the weight is steady
+- **At zero** and **Tare active**
+- **Overload** and **Underload**, which turn on when the load is outside the
+  scale's range
+- **Load**, the gross weight as a percentage of the scale's capacity
+- **Capacity** and **Division**, read from the scale's own settings
 - **Tare**, **Zero** and **Clear tare** buttons
 
 Put a known weight on the scale and check that the three weights show what you
 expect.
 
-Three more sensors are switched off by default: **High-resolution weight**,
-**ADC counts** and **Load cell signal**. To switch one on, open the device,
+Five more sensors are switched off by default: **High-resolution weight**,
+**ADC counts**, **Load cell signal**, **Reply time** and **Last reading**. To switch one on, open the device,
 click the line about entities that are not shown, open the entity, press the
 cog icon and turn on **Enabled**.
 

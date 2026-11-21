@@ -76,11 +76,38 @@
       },
       "millivolts_smoothed": {
         "name": "Signal merilne celice (zglajen)"
+      },
+      "load": {
+        "name": "Obremenitev"
+      },
+      "capacity": {
+        "name": "Nosilnost"
+      },
+      "division": {
+        "name": "Razdelek"
+      },
+      "reply_time": {
+        "name": "Odzivni čas"
+      },
+      "last_reading": {
+        "name": "Zadnji odčitek"
       }
     },
     "binary_sensor": {
       "stable": {
         "name": "Stabilno"
+      },
+      "at_zero": {
+        "name": "Na ničli"
+      },
+      "tare_active": {
+        "name": "Tara aktivna"
+      },
+      "overload": {
+        "name": "Preobremenitev"
+      },
+      "underload": {
+        "name": "Podobremenitev"
       }
     },
     "button": {

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -12,10 +13,17 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EntityCategory, UnitOfElectricPotential, UnitOfMass
+from homeassistant.const import (
+    PERCENTAGE,
+    EntityCategory,
+    UnitOfElectricPotential,
+    UnitOfMass,
+    UnitOfTime,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import StateType
 
 from .client import NeutronClient
 from .const import DOMAIN, SMOOTHED_KEYS
@@ -43,7 +51,11 @@ SMOOTHED_EXTRA_DECIMALS = 1
 class NeutronSensorDescription(SensorEntityDescription):
     """Describes a Neutron sensor."""
 
-    value_fn: Callable[[Reading], float | int | None]
+    # Value taken from the latest reading ...
+    value_fn: Callable[[Reading], float | int | None] | None = None
+    # ... or from the client (settings, timing, values derived from both).
+    client_fn: Callable[[NeutronClient], StateType | datetime] | None = None
+    state_class: SensorStateClass | None = SensorStateClass.MEASUREMENT
     is_weight: bool = False
     # Decimals shown beyond what the scale prints for a weight.
     extra_decimals: int = 0
@@ -98,6 +110,61 @@ SENSORS: tuple[NeutronSensorDescription, ...] = (
     ),
 )
 
+def _load_percent(client: NeutronClient) -> float | None:
+    """Gross weight as a share of the scale's capacity."""
+    reading, settings = client.reading, client.settings
+    if reading is None or reading.gross is None:
+        return None
+    if settings is None or not settings.capacity:
+        return None
+    return round(100 * reading.gross / settings.capacity, 2)
+
+
+SETTINGS_SENSORS: tuple[NeutronSensorDescription, ...] = (
+    NeutronSensorDescription(
+        key="load",
+        translation_key="load",
+        native_unit_of_measurement=PERCENTAGE,
+        suggested_display_precision=1,
+        client_fn=_load_percent,
+    ),
+    NeutronSensorDescription(
+        key="capacity",
+        translation_key="capacity",
+        is_weight=True,
+        state_class=None,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        client_fn=lambda c: c.settings.capacity if c.settings else None,
+    ),
+    NeutronSensorDescription(
+        key="division",
+        translation_key="division",
+        is_weight=True,
+        state_class=None,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        client_fn=lambda c: c.settings.division if c.settings else None,
+    ),
+    NeutronSensorDescription(
+        key="reply_time",
+        translation_key="reply_time",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.MILLISECONDS,
+        suggested_display_precision=0,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        client_fn=lambda c: None if c.reply_time is None else round(c.reply_time * 1000),
+    ),
+    NeutronSensorDescription(
+        key="last_reading",
+        translation_key="last_reading",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        state_class=None,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        client_fn=lambda c: c.last_reading_at,
+    ),
+)
+
 SMOOTHED_SENSORS: tuple[NeutronSensorDescription, ...] = (
     NeutronSensorDescription(
         key="net_smoothed",
@@ -147,7 +214,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the sensors."""
     client: NeutronClient = entry.runtime_data
-    descriptions = list(SENSORS)
+    descriptions = [*SENSORS, *SETTINGS_SENSORS]
     if client.smoothing != SMOOTHING_NONE:
         descriptions.extend(SMOOTHED_SENSORS)
     else:
@@ -164,7 +231,6 @@ class NeutronSensor(NeutronEntity, SensorEntity):
     """A value from the scale's reading."""
 
     entity_description: NeutronSensorDescription
-    _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(
         self, client: NeutronClient, description: NeutronSensorDescription
@@ -173,8 +239,10 @@ class NeutronSensor(NeutronEntity, SensorEntity):
         self.entity_description = description
 
     @property
-    def native_value(self) -> float | int | None:
+    def native_value(self) -> StateType | datetime:
         description = self.entity_description
+        if description.client_fn is not None:
+            return description.client_fn(self._client)
         if description.smoothed_key is not None:
             value = self._client.smoothed(description.smoothed_key)
             return None if value is None else round(value, STATE_ROUNDING)
@@ -186,18 +254,24 @@ class NeutronSensor(NeutronEntity, SensorEntity):
     def native_unit_of_measurement(self) -> str | None:
         if not self.entity_description.is_weight:
             return self.entity_description.native_unit_of_measurement
-        if (reading := self._client.reading) is None or reading.unit is None:
+        if (unit := self._scale_unit()) is None:
             return None
         # Fall back to the scale's own unit text (for example "t") when Home
         # Assistant has no matching weight unit.
-        return WEIGHT_UNITS.get(reading.unit, reading.unit)
+        return WEIGHT_UNITS.get(unit, unit)
+
+    def _scale_unit(self) -> str | None:
+        """Unit from the latest reading, or from the scale settings."""
+        reading, settings = self._client.reading, self._client.settings
+        if reading is not None and reading.unit is not None:
+            return reading.unit
+        return settings.unit if settings is not None else None
 
     @property
     def device_class(self) -> SensorDeviceClass | None:
         if not self.entity_description.is_weight:
             return self.entity_description.device_class
-        reading = self._client.reading
-        if reading is not None and reading.unit in WEIGHT_UNITS:
+        if self._scale_unit() in WEIGHT_UNITS:
             return SensorDeviceClass.WEIGHT
         return None
 

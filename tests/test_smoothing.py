@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from custom_components.cloudscale_neutron.parser import parse_reading
+from custom_components.cloudscale_neutron.parser import parse_reading, parse_settings
 from custom_components.cloudscale_neutron.smoothing import Smoother
 
 REPLY = "QASI1C,1,1,1,S,     1.250,     1.000,     0.250,   1.25012,   1234567,    0.1234,kg"
@@ -68,3 +68,21 @@ def test_mean_gains_resolution() -> None:
     for second, value in enumerate([1234567, 1234568, 1234567, 1234569]):
         smoother.add(value, float(second))
     assert smoother.value == pytest.approx(1234567.75)
+
+
+def test_parse_settings() -> None:
+    settings = parse_settings("RSD;SCI=1;1D1=0.005;1D2=;1D3=;1M1=30;1M2=;1M3=;1U=kg;1FT=100")
+    assert (settings.unit, settings.capacity, settings.division) == ("kg", 30.0, 0.005)
+    assert settings.raw["1FT"] == "100" and settings.raw["1M2"] == ""
+
+
+def test_parse_settings_multi_range() -> None:
+    settings = parse_settings("RSD;1D1=0.001;1D2=0.002;1D3=;1M1=3;1M2=6;1M3=;1U=kg")
+    assert (settings.capacity, settings.division) == (6.0, 0.001)
+
+
+def test_parse_settings_ignores_other_replies() -> None:
+    assert parse_settings(REPLY) is None
+    assert parse_settings("RSD") is None
+    assert parse_settings("T S      1.000 kg") is None
+    assert parse_reading("RSD;1U=kg") is None
