@@ -23,14 +23,32 @@ jobs:
 
   tests:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Each Python version gets the newest Home Assistant that supports it.
+        python-version: ["3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: ${{ matrix.python-version }}
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
       - run: pip install -r requirements_test.txt
       - run: npm install --prefix tests/broker
-      - run: pytest
+      - name: Show the Home Assistant version under test
+        run: python -c "import homeassistant.const as c; print('Home Assistant', c.__version__)"
+      - run: pytest --cov --cov-report=xml --cov-report=term-missing
+      - name: Add the coverage table to the run summary
+        if: always()
+        run: python -m coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY" || true
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.14'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          # Until the repository is set up on Codecov there is nowhere to upload to.
+          fail_ci_if_error: false

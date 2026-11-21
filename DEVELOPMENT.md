@@ -48,9 +48,21 @@ once per connection). The buttons send `T`, `Z` and `TAC`, only on a press.
 
     pip install -r requirements_test.txt
     npm install --prefix tests/broker
-    pytest
+    pytest --cov
 
-Developed against Home Assistant 2026.2 on Python 3.13 and Node 22.
+Developed against Home Assistant 2026.2 on Python 3.13 and Node 22. CI also
+runs the suite on Python 3.14, which pulls in a newer Home Assistant.
+
+| File | What it covers |
+|---|---|
+| `test_integration.py` | Setup form, readings, buttons, options, smoothing, end to end |
+| `test_connection.py` | TLS, refusals, timeouts, reconnecting, traffic from other clients |
+| `test_client.py` | Client logic with a fake clock and no network |
+| `test_parser_and_smoothing.py` | Reply parsing and the smoothing filters |
+| `test_metadata.py` | Manifest, translations and the list of entity ids |
+| `test_translations.py` | Every language covers the English keys |
+
+Coverage settings are in `.coveragerc` (branch coverage, 95% floor).
 
 ## Not yet verified against a real module
 
@@ -58,8 +70,8 @@ Developed against Home Assistant 2026.2 on Python 3.13 and Node 22.
   vendor's protocol manual; they were not seen in captured traffic.
 - The order of gross / net / tare in the reply follows the manual; the scale
   was empty in the only capture, so all three read zero.
-- TLS and login against the real broker are not covered by the tests, which
-  use a local broker without TLS.
+- TLS is tested against a local broker with a self-signed certificate, and
+  login against a local broker. Neither has been tested against the real one.
 - The Overload and Underload sensors expect status `+` and `-`. The protocol
   manual lists those for a sibling command; only `S` and `D` have been seen.
 - Of the `RSD` keys, only unit (`1U`), capacity (`1M1`..`1M3`) and division

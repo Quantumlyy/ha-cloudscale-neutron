@@ -1,5 +1,8 @@
 # CloudScale Neutron for Home Assistant
 
+[![Validate](https://github.com/Quantumlyy/ha-cloudscale-neutron/actions/workflows/validate.yml/badge.svg)](https://github.com/Quantumlyy/ha-cloudscale-neutron/actions/workflows/validate.yml)
+[![codecov](https://codecov.io/gh/Quantumlyy/ha-cloudscale-neutron/graph/badge.svg)](https://codecov.io/gh/Quantumlyy/ha-cloudscale-neutron)
+
 Reads a CloudScale Neutron scale through the Scale Monitor cloud broker
 (MQTT over WebSocket) and exposes it in Home Assistant. Nothing changes on the
 module, and Scale Monitor keeps working alongside it.
@@ -122,10 +125,11 @@ left out.
 
     pip install -r requirements_test.txt
     npm install --prefix tests/broker
-    pytest
+    pytest --cov
 
 The tests start a local broker with a fake module behind it (`tests/broker`),
-so they need Node.js and never touch the real cloud.
+so they need Node.js and never touch the real cloud. `--cov` prints line and
+branch coverage and fails below 95%.
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for the code layout, what is not yet
 verified against a real module, and the rule about keeping account values out
