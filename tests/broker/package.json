@@ -1,0 +1,9 @@
+{
+  "name": "cloudscale-neutron-test-broker",
+  "private": true,
+  "description": "Local MQTT-over-WebSocket broker with a fake Neutron module, for tests only",
+  "dependencies": {
+    "aedes": "^0.51.0",
+    "ws": "^8.18.0"
+  }
+}

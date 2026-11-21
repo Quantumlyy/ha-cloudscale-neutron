@@ -1,0 +1,16 @@
+{
+  "domain": "cloudscale_neutron",
+  "name": "CloudScale Neutron",
+  "codeowners": [
+    "@Quantumlyy"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/Quantumlyy/ha-cloudscale-neutron",
+  "integration_type": "device",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/Quantumlyy/ha-cloudscale-neutron/issues",
+  "requirements": [
+    "paho-mqtt>=1.6.1"
+  ],
+  "version": "0.2.0"
+}

@@ -1,0 +1,108 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "Connects to your module through the Scale Monitor cloud. The module ID and PIN are printed on the module's label.",
+        "data": {
+          "module_id": "Module ID (MID)",
+          "pin": "Module PIN (CSL)",
+          "host": "Broker host",
+          "port": "Broker port",
+          "path": "WebSocket path",
+          "tls": "Use TLS",
+          "scan_interval": "Poll interval"
+        },
+        "data_description": {
+          "host": "The host your Scale Monitor account uses for its MQTT WebSocket. Open Scale Monitor with the browser's developer tools on the Network tab, filter for WS, and copy the host of the wss:// request.",
+          "scan_interval": "How often the scale is asked for a reading, in seconds. Decimals are allowed, down to 0.2."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach the broker. Check the host, port and path.",
+      "invalid_auth": "The broker rejected the module ID or PIN."
+    },
+    "abort": {
+      "already_configured": "This module is already set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "CloudScale Neutron options",
+        "data": {
+          "scan_interval": "Poll interval",
+          "smoothing": "Smoothing",
+          "smoothing_window": "Smoothing window",
+          "stable_only": "Smooth stable readings only"
+        },
+        "data_description": {
+          "scan_interval": "How often the scale is asked for a reading. Decimals are allowed, down to 0.2 seconds.",
+          "smoothing": "Adds smoothed weight sensors next to the live ones. Average is the mean of the window, median ignores short spikes, exponential weights recent readings more.",
+          "smoothing_window": "How far back the smoothing looks. For exponential smoothing this is the time constant.",
+          "stable_only": "Leave readings out of the smoothing while the scale reports the weight as moving."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "net": {
+        "name": "Net weight"
+      },
+      "gross": {
+        "name": "Gross weight"
+      },
+      "tare": {
+        "name": "Tare"
+      },
+      "high_res": {
+        "name": "High-resolution weight"
+      },
+      "adc": {
+        "name": "ADC counts"
+      },
+      "millivolts": {
+        "name": "Load cell signal"
+      },
+      "net_smoothed": {
+        "name": "Net weight smoothed"
+      },
+      "gross_smoothed": {
+        "name": "Gross weight smoothed"
+      },
+      "adc_smoothed": {
+        "name": "ADC counts smoothed"
+      },
+      "millivolts_smoothed": {
+        "name": "Load cell signal smoothed"
+      }
+    },
+    "binary_sensor": {
+      "stable": {
+        "name": "Stable"
+      }
+    },
+    "button": {
+      "tare": {
+        "name": "Tare"
+      },
+      "zero": {
+        "name": "Zero"
+      },
+      "clear_tare": {
+        "name": "Clear tare"
+      }
+    }
+  },
+  "selector": {
+    "smoothing": {
+      "options": {
+        "none": "Off",
+        "mean": "Average",
+        "median": "Median",
+        "exponential": "Exponential"
+      }
+    }
+  }
+}
