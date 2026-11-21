@@ -1,0 +1,108 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "Poveže se z vašim modulom prek oblaka Scale Monitor. ID modula in PIN sta natisnjena na nalepki modula.",
+        "data": {
+          "module_id": "ID modula (MID)",
+          "pin": "PIN modula (CSL)",
+          "host": "Gostitelj posrednika MQTT",
+          "port": "Vrata posrednika",
+          "path": "Pot WebSocket",
+          "tls": "Uporabi TLS",
+          "scan_interval": "Interval poizvedovanja"
+        },
+        "data_description": {
+          "host": "Gostitelj, ki ga vaš račun Scale Monitor uporablja za MQTT prek WebSocket. Odprite Scale Monitor z razvijalskimi orodji brskalnika na zavihku Omrežje (Network), filtrirajte po WS in kopirajte gostitelja zahteve wss://.",
+          "scan_interval": "Kako pogosto se od tehtnice zahteva odčitek, v sekundah. Dovoljene so decimalke, najmanj 0,2."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Povezava s posrednikom ni uspela. Preverite gostitelja, vrata in pot.",
+      "invalid_auth": "Posrednik je zavrnil ID modula ali PIN."
+    },
+    "abort": {
+      "already_configured": "Ta modul je že nastavljen."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Možnosti CloudScale Neutron",
+        "data": {
+          "scan_interval": "Interval poizvedovanja",
+          "smoothing": "Glajenje",
+          "smoothing_window": "Okno glajenja",
+          "stable_only": "Gladi samo stabilne odčitke"
+        },
+        "data_description": {
+          "scan_interval": "Kako pogosto se od tehtnice zahteva odčitek. Dovoljene so decimalke, najmanj 0,2 sekunde.",
+          "smoothing": "Poleg sprotnih senzorjev teže doda še zglajene. Povprečje je aritmetična sredina okna, mediana prezre kratke skoke, eksponentno glajenje daje večjo težo novejšim odčitkom.",
+          "smoothing_window": "Kako daleč nazaj sega glajenje. Pri eksponentnem glajenju je to časovna konstanta.",
+          "stable_only": "Odčitki se pri glajenju ne upoštevajo, dokler tehtnica javlja, da se teža spreminja."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "net": {
+        "name": "Neto teža"
+      },
+      "gross": {
+        "name": "Bruto teža"
+      },
+      "tare": {
+        "name": "Tara"
+      },
+      "high_res": {
+        "name": "Teža v visoki ločljivosti"
+      },
+      "adc": {
+        "name": "Vrednost ADC"
+      },
+      "millivolts": {
+        "name": "Signal merilne celice"
+      },
+      "net_smoothed": {
+        "name": "Neto teža (zglajena)"
+      },
+      "gross_smoothed": {
+        "name": "Bruto teža (zglajena)"
+      },
+      "adc_smoothed": {
+        "name": "Vrednost ADC (zglajena)"
+      },
+      "millivolts_smoothed": {
+        "name": "Signal merilne celice (zglajen)"
+      }
+    },
+    "binary_sensor": {
+      "stable": {
+        "name": "Stabilno"
+      }
+    },
+    "button": {
+      "tare": {
+        "name": "Tariraj"
+      },
+      "zero": {
+        "name": "Ničliraj"
+      },
+      "clear_tare": {
+        "name": "Izbriši taro"
+      }
+    }
+  },
+  "selector": {
+    "smoothing": {
+      "options": {
+        "none": "Izklopljeno",
+        "mean": "Povprečje",
+        "median": "Mediana",
+        "exponential": "Eksponentno"
+      }
+    }
+  }
+}
