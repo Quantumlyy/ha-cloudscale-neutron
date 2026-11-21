@@ -7,7 +7,17 @@ module, and Scale Monitor keeps working alongside it.
 This uses the same channel the Scale Monitor web app uses. It is not a
 documented vendor API, so it may change without notice.
 
+Step-by-step setup instructions are in the
+[wiki](https://github.com/Quantumlyy/ha-cloudscale-neutron/wiki).
+
 ## Install with HACS
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Quantumlyy&repository=ha-cloudscale-neutron&category=integration)
+
+Press the button, confirm adding the repository, download **CloudScale
+Neutron**, and restart Home Assistant.
+
+Without the button:
 
 1. In HACS, open the menu at the top right and choose **Custom repositories**.
 2. Add `https://github.com/Quantumlyy/ha-cloudscale-neutron` with type
@@ -21,8 +31,10 @@ folder of your Home Assistant configuration directory and restart.
 
 ## Set up
 
-Go to **Settings → Devices & services → Add integration**, search for
-**CloudScale Neutron**, and enter:
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=cloudscale_neutron)
+
+Press the button, or go to **Settings → Devices & services → Add
+integration** and search for **CloudScale Neutron**. Then enter:
 
 - **Module ID and PIN** from the module's label.
 - **Broker host**: the host your Scale Monitor account uses for its MQTT
@@ -96,3 +108,11 @@ so they need Node.js and never touch the real cloud.
 See [DEVELOPMENT.md](DEVELOPMENT.md) for the code layout, what is not yet
 verified against a real module, and the rule about keeping account values out
 of the repository.
+
+## Languages
+
+English and Slovenian.
+
+## Licence
+
+[MIT](LICENSE)
