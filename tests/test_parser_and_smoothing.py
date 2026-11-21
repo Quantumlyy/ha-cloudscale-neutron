@@ -84,5 +84,35 @@ def test_parse_settings_multi_range() -> None:
 def test_parse_settings_ignores_other_replies() -> None:
     assert parse_settings(REPLY) is None
     assert parse_settings("RSD") is None
+    assert parse_settings("RSD;no key value pairs here") is None
     assert parse_settings("T S      1.000 kg") is None
     assert parse_reading("RSD;1U=kg") is None
+
+
+def test_parse_settings_skips_malformed_fields() -> None:
+    settings = parse_settings("RSD;oops;1U=kg;;1M1=abc;1D1= 0.01 ")
+    assert settings.raw == {"1U": "kg", "1M1": "abc", "1D1": "0.01"}
+    assert (settings.unit, settings.capacity, settings.division) == ("kg", None, 0.01)
+
+
+def test_zero_window_follows_the_latest_reading() -> None:
+    for method in ("mean", "median", "exponential"):
+        smoother = Smoother(method, 0)
+        smoother.add(5.0, 0.0)
+        smoother.add(9.0, 1.0)
+        assert smoother.value == pytest.approx(9.0), method
+
+
+def test_smoothed_value_stays_within_the_readings() -> None:
+    """Whatever the method, the result lies between the smallest and largest input."""
+    import random
+
+    rng = random.Random(7)
+    for method in ("mean", "median", "exponential"):
+        smoother = Smoother(method, 30)
+        now, values = 0.0, []
+        for _ in range(200):
+            now += rng.uniform(0.1, 10)
+            values.append(rng.uniform(-5, 60))
+            smoother.add(values[-1], now)
+            assert min(values) - 1e-9 <= smoother.value <= max(values) + 1e-9, method
