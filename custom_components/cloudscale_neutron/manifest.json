@@ -1,6 +1,9 @@
 {
   "domain": "cloudscale_neutron",
   "name": "CloudScale Neutron",
+  "categories": [
+    "sensors"
+  ],
   "codeowners": [
     "@Quantumlyy"
   ],
