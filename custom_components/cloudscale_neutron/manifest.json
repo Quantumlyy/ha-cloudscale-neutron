@@ -13,7 +13,7 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/Quantumlyy/ha-cloudscale-neutron/issues",
   "requirements": [
-    "paho-mqtt>=1.6.1"
+    "paho-mqtt>=2.0.0"
   ],
   "version": "0.3.0"
 }

@@ -13,10 +13,11 @@ import logging
 import secrets
 import ssl
 import threading
-import time
+from time import monotonic
 from typing import Any
 
 import paho.mqtt.client as mqtt
+from paho.mqtt.enums import CallbackAPIVersion
 
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers.event import async_track_time_interval
@@ -37,21 +38,16 @@ AUTH_FAILURE_CODES = {4, 5, 134, 135}
 
 
 def _rc_value(reason_code: Any) -> int:
-    """Return a CONNACK result as an int for both paho 1.x and 2.x."""
+    """Return a CONNACK result (a paho ReasonCode) as an int."""
     return int(getattr(reason_code, "value", reason_code))
 
 
 def _build_client(path: str, tls: bool, module_id: str, pin: str) -> mqtt.Client:
     """Create a paho client. Blocking (loads CA certificates)."""
     client_id = f"ha-{module_id}-{secrets.token_hex(4)}"
-    try:
-        from paho.mqtt.enums import CallbackAPIVersion  # paho-mqtt >= 2.0
-
-        client = mqtt.Client(
-            CallbackAPIVersion.VERSION2, client_id=client_id, transport="websockets"
-        )
-    except ImportError:  # paho-mqtt 1.x
-        client = mqtt.Client(client_id=client_id, transport="websockets")
+    client = mqtt.Client(
+        CallbackAPIVersion.VERSION2, client_id=client_id, transport="websockets"
+    )
     client.ws_set_options(path=path or "/")
     client.username_pw_set(f"CSL-{module_id}", pin)
     if tls:
@@ -185,7 +181,7 @@ class NeutronClient:
         return (
             self._connected
             and self._last_reply is not None
-            and time.monotonic() - self._last_reply < self._stale_after
+            and monotonic() - self._last_reply < self._stale_after
         )
 
     def smoothed(self, key: str) -> float | None:
@@ -227,7 +223,7 @@ class NeutronClient:
             return
         # Time the reply from the oldest unanswered poll, but give up on one
         # that has gone stale so a dropout does not show as one huge reply time.
-        now = time.monotonic()
+        now = monotonic()
         if self._poll_sent_at is None or now - self._poll_sent_at > self._stale_after:
             self._poll_sent_at = now
 
@@ -289,7 +285,7 @@ class NeutronClient:
             return  # otherwise a reply to some other command (tare, zero, ...)
         changed = reading != self.reading
         self.reading = reading
-        now = time.monotonic()
+        now = monotonic()
         self._last_reply = now
         self.last_reading_at = dt_util.utcnow()
         if self._poll_sent_at is not None:
